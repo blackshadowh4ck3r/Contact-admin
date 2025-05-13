@@ -8,7 +8,7 @@
   <!-- Firebase Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, onChildAdded, get } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -30,28 +30,6 @@
       const loginBox = document.getElementById('loginBox');
       const panel = document.getElementById('panel');
       const msgContainer = document.getElementById('messages');
-      const refreshBtn = document.getElementById('refreshBtn');
-
-      function loadMessages(dbRef, container) {
-        container.innerHTML = ""; // Clear existing messages
-        get(dbRef).then(snapshot => {
-          const items = [];
-          snapshot.forEach(child => {
-            items.push({ key: child.key, ...child.val() });
-          });
-          // Reverse to show latest first
-          items.reverse().forEach(data => {
-            const div = document.createElement('div');
-            div.className = 'msg-card';
-            div.innerHTML = `
-              <h4>${data.name}</h4>
-              <p><strong>Email:</strong> ${data.email}</p>
-              <p><strong>Message:</strong> ${data.message}</p>
-            `;
-            container.appendChild(div);
-          });
-        });
-      }
 
       // Handle login
       document.getElementById('loginForm').addEventListener('submit', (e) => {
@@ -66,10 +44,7 @@
 
             const dbRef = ref(db, 'contacts');
 
-            // Load all messages initially
-            loadMessages(dbRef, msgContainer);
-
-            // Listen for new messages and prepend them
+            // Listen for new child nodes being added in real-time
             onChildAdded(dbRef, (snapshot) => {
               const data = snapshot.val();
               const div = document.createElement('div');
@@ -79,15 +54,9 @@
                 <p><strong>Email:</strong> ${data.email}</p>
                 <p><strong>Message:</strong> ${data.message}</p>
               `;
-              // Avoid duplicate if already loaded
-              if (![...msgContainer.children].some(el => el.innerHTML === div.innerHTML)) {
-                msgContainer.insertBefore(div, msgContainer.firstChild);
-              }
-            });
 
-            // Handle refresh button
-            refreshBtn.addEventListener('click', () => {
-              loadMessages(dbRef, msgContainer);
+              // Prepend new message to the top of the container
+              msgContainer.insertBefore(div, msgContainer.firstChild);
             });
           })
           .catch((error) => {
@@ -180,18 +149,6 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
-    #refreshBtn {
-      padding: 8px 16px;
-      font-size: 14px;
-      background-color: #197aa0;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      float: right;
-      margin-left: auto;
-    }
-
     /* Responsive Design */
     @media (max-width: 480px) {
       form {
@@ -218,22 +175,19 @@
     <form id="loginForm">
       <label for="adminEmail">Email</label>
       <input type="email" id="adminEmail" placeholder="Admin Email" required><br>
-
+      
       <label for="adminPassword">Password</label>
       <input type="password" id="adminPassword" placeholder="Password" required><br>
-
+      
       <button type="submit">Login</button>
     </form>
   </div>
 
   <!-- Admin Panel to View Messages -->
   <div id="panel">
-    <h2>
-      Submitted Messages
-      <button id="refreshBtn">Refresh</button>
-    </h2>
+    <h2>Submitted Messages</h2>
     <div id="messages"></div>
   </div>
 
 </body>
-  </html>
+</html>
